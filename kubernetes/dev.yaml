@@ -1,0 +1,66 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: dev-interview
+
+---
+apiVersion: v1
+data:
+  bucket_name: dev-interview-123
+  region_name: us-east-1
+kind: ConfigMap
+metadata:
+  name: dev-configmap
+  namespace: dev-interview
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dev-secret
+  namespace: dev-interview
+type: Opaque
+data:
+  access_key: XXXXX
+  secret_key: YYYYY
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dev-interview-cronjob
+  namespace: dev-interview
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: dev-interview
+            image: interview
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: BUCKET_NAME
+                valueFrom:
+                   configMapKeyRef:
+                     name: dev-configmap
+                     key: bucket_name
+              - name: REGION_NAME
+                valueFrom:
+                   configMapKeyRef:
+                     name: dev-configmap
+                     key: region_name
+              - name: ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: dev-secret
+                    key: access_key
+              - name: SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: dev-secret
+                    key: secret_key
+          restartPolicy: OnFailure
+

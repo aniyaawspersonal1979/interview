@@ -1,0 +1,66 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: qa-interview
+
+---
+apiVersion: v1
+data:
+  bucket_name: qa-interview-123
+  region_name: us-east-1
+kind: ConfigMap
+metadata:
+  name: qa-configmap
+  namespace: qa-interview
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: qa-secret
+  namespace: qa-interview
+type: Opaque
+data:
+  access_key: XXXXX
+  secret_key: YYYYY
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: qa-interview-cronjob
+  namespace: qa-interview
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: qa-interview
+            image: interview
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: BUCKET_NAME
+                valueFrom:
+                   configMapKeyRef:
+                     name: qa-configmap
+                     key: bucket_name
+              - name: REGION_NAME
+                valueFrom:
+                   configMapKeyRef:
+                     name: qa-configmap
+                     key: region_name
+              - name: ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: qa-secret
+                    key: access_key
+              - name: SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: qa-secret
+                    key: secret_key
+          restartPolicy: OnFailure
+
